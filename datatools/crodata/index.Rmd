@@ -133,7 +133,7 @@ tags$p("This report pulls data specifically for CRO analysis. All data is collec
        "For comments, questions and bugs please fill out our ",a(href="https://goo.gl/forms/lCxttDAJAmo8Jnbm1", "Google Form.", target="_blank"),
        br(),
        br(),
-       "Changelog for current features and upcoming configurations can be viewed ",a(href="https://github.com/TechnicalWebAnalytics/shiny-server/blob/master/bvaccel-datatools/changelog.txt", "here.", target="_blank"),
+       "Changelog for current features and upcoming configurations can be viewed ",a(href="https://github.com/TechnicalWebAnalytics/shiny-server/blob/master/datatools/crodata/changelog.txt", "here.", target="_blank"),
        br(),
        br(),
        "You can use the pagination to the right to navigate to the available report graphs ( after authorization ).",
