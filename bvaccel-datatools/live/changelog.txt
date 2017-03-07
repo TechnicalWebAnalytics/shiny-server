@@ -6,6 +6,7 @@ Upcoming Changes
 - smoother reactive functionality
 - ui / ux dashboard development
 - user account creation to save reports
+- cached report settings
 
 ver 1.0
 - added raw ga data reports 

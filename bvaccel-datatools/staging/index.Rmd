@@ -1,0 +1,784 @@
+---
+title: "CRO Data"
+author: "mechelle@bvaccel.com / mariel@bvaccel.com"
+date: "3/5/2017"
+runtime: shiny
+---
+<!-- RUN -->
+<!--
+options(shiny.port = 1222)
+#setwd("~/Google Drive/Work/Syntax/R/RMarkdown/")
+rmarkdown::run("index.Rmd")
+-->
+
+```{r pagination, echo=FALSE}
+renderUI({
+  req(render3())
+  tagList(
+    tags$div(class="floating-pagination",
+             
+             h3("Navigation"),
+             a(href="#description", "Report Description"),
+             br(),
+             a(href="#generate", "Generate a Report"),
+             br(),
+             a(href="#accountinfo", "Account Information"),
+             br(),
+             h3("Reports & Graphs"),
+             a(href="#dayofweek", "Day of Week"),
+              br(),
+             a(href="#hourofday", "Hour of Day"),
+             br(),
+             a(href="#devices", "Devices"),
+             br(),
+             a(href="#usertype", "New vs Returning"),
+             br(),
+             a(href="#sourcemedium", "Source / Medium"),
+             br(),
+             a(href="#landingpage", "Landing Page"),
+             br(),
+             br(),
+             strong(a(href="#", "Return to Top"))
+             )
+  )
+})
+```
+
+```{r options & libraries, include=FALSE}
+print('test')
+options("googleAuthR.webapp.client_id" = "472746344232-0vo77fupf9onf0bs3brrk2jc86b4vlj1.apps.googleusercontent.com")
+options("googleAuthR.webapp.client_secret" = "u3EHSLSlUU-Wb0J4AI5RauV5")
+options("googleAuthR.scopes.selected" = c("https://www.googleapis.com/auth/webmasters",
+                                          "https://www.googleapis.com/auth/analytics",
+                                          "https://www.googleapis.com/auth/tagmanager.readonly",
+                                          "https://www.googleapis.com/auth/plus.me"))
+options("googleAuthR.httr_oauth_cache" = TRUE)
+tags$style(type="text/css",
+  ".shiny-output-error { visibility: hidden; }",
+  ".shiny-output-error:before { visibility: hidden; }"
+)
+
+require('googleAuthR')
+require('RGA')
+require('d3heatmap')
+require('xlsx')
+```
+```{r authorize, echo=FALSE}
+auth <- callModule(gar_auth_js, "auth_demo")
+# .onAttach <- function(libname, pkgname){
+# 
+#   googleAuthR::gar_attach_auto_auth(" https://www.googleapis.com/oauth2/v1/tokeninfo",
+#                                     environment_var = "GAR_AUTH_FILE")
+# }
+# .onAttach(libname = '/usr/local/lib/R/auth', pkgname = 'googleAuthR')
+# Sys.getenv()
+# GAR_AUTH_FILE='/usr/local/lib/R/auth' 
+```
+</br>
+```{r date & account, echo=FALSE, error=FALSE}
+
+vals <- reactiveValues(account = NULL)
+valsReact <- reactiveValues(id = NULL)
+
+# capture profiles
+prof <- reactive({
+  req(auth())
+  authorize(token=auth())
+  vals$account <- list_accounts()
+  selectInput("account", 
+    "Choose Account:", 
+  vals$account$name, selectize = TRUE)
+})
+
+render2 <- reactive({
+  req(prof())
+  # store selected account id
+  # if vals account values name is equal to selected account, get selected account id
+  valsReact$id <- vals$account[vals$account$name == input$account,]$id 
+  # store selected property data
+  vals$property <- list_webproperties(accountId = valsReact$id) 
+  selectInput("property", 
+              "Choose Property:", 
+              paste0(vals$property$name,sep = " ", vals$property$id))
+})
+
+render3 <- reactive({
+  req(render2())
+  valsReact$uaid <- vals$property[paste0(vals$property$name,sep = " ", vals$property$id) == input$property,]$id # store selected property id
+  vals$view <- list_profiles(accountId = valsReact$id, webPropertyId = valsReact$uaid) # store selected view data
+  selectInput("view", 
+              "Choose View:", 
+              vals$view$name)
+  })
+
+dateRange <- reactive({
+  req(auth())
+  dateRangeInput('dateRange',
+      label = 'Date range input: yyyy-mm-dd',
+      start = Sys.Date() - 2, end = Sys.Date() + 2
+    )
+})
+```
+<section class="wrapper">
+<!-- <div class="floating-pagination"> -->
+<!-- <a href="#dayofweek">Day of Week</a> -->
+<!-- </div> -->
+
+```{r info, echo=FALSE}
+tags$h2("Report Description", class="description",
+         br())
+tags$p("This report pulls data specifically for CRO analysis. All data is collected from Google Analytics and can be exported into an XLSX workbook.",
+       br(),
+       br(),
+       "For comments, questions and bugs please fill out our ",a(href="https://goo.gl/forms/lCxttDAJAmo8Jnbm1", "Google Form.", target="_blank"),
+       br(),
+       br(),
+       "Changelog for current features and upcoming configurations can be viewed ",a(href="https://github.com/TechnicalWebAnalytics/shiny-server/blob/master/bvaccel-datatools/changelog.txt", "here.", target="_blank"),
+       br(),
+       br(),
+       "You can use the pagination to the right to navigate to the available report graphs ( after authorization ).",
+       br(),
+       br()
+       )
+```
+
+```{r, echo=FALSE}
+tags$h2("Generate a Report", class="generate",
+         br())
+tags$p("Follow the steps to generate a report.",
+       br(),
+       br())
+tags$h4(em("1. Authorize Google Analytics. Note that if you refresh you will have to reauthorize. We are working on this."))
+gar_auth_jsUI("auth_demo", login_text = "Authorize Google")
+tags$br()
+tags$br()
+tags$h4(em("2. Wait for account details to load. This could take a while. If you update any account details please wait for tables and graphs to load. ( We will be installing a progress loader at some point )"))
+```
+</br>
+```{r date, echo=FALSE}
+renderUI({
+  req(auth())
+  tagList(
+  tags$h4(em("3. Choose your date range.")),
+  dateRange())
+})
+tags$br()
+```
+<section class="account-details">
+<div class="column1">
+```{r, echo=FALSE, error=FALSE}
+renderUI({
+  req(auth())
+  tagList(tags$h4(em("4. Choose your GA details. Once you are in the selection you can hit backspace to search.")),
+  prof())
+})
+```
+</div>
+<div class="column2">
+```{r, echo=FALSE, error=FALSE}
+renderUI({
+  req(prof())
+  render2()
+})
+```
+</div>
+<div class="column3">
+```{r, echo=FALSE, error=FALSE}
+renderUI({
+  req(render2())
+  render3()
+})
+```
+</div>
+```{r download, echo=FALSE}
+tags$br()
+export <- reactive({
+  req(render3())
+  downloadButton(outputId = 'export', label = "Magic Button")
+})
+
+renderUI({
+  req(render3())
+  tags$h4(em("5. Export your data ( Currently as an XLSX ). Or you can view the data in the graphs below."))
+})
+
+renderUI({
+  req(render3())
+  downloadButton("downloadData", "The Magic Button")})
+
+reactive({
+  req(render3())
+  client <- data.frame(t(clientdata$data))
+  dow <- data.frame(values$DayOfWeek)
+  hod <- values$HourOfDay
+  dev <- values$Devices
+  ut <- values$UserType
+  sm <- values$SourceMedium
+  lp <- values$LandingPage
+
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("crodata-", Sys.Date(), ".xlsx", sep="")
+    },
+    content = function(file) {
+        write.xlsx(dow, file, sheetName = 'RAW Day of Week')
+        write.xlsx(hod, file, append=TRUE, sheetName = 'RAW Hour of Day')
+        write.xlsx(dev, file, append=TRUE, sheetName = 'RAW Devices')
+        write.xlsx(ut, file, append=TRUE, sheetName = 'RAW New vs Returning')
+        write.xlsx(sm, file, append=TRUE, sheetName = 'RAW Source Medium')
+        write.xlsx(lp, file, append=TRUE, sheetName = 'RAW Landing Page')
+
+    }
+  )})
+
+
+```
+</br>
+</section>
+```{r, echo=FALSE}
+clientdata <- reactiveValues()
+client <- reactive({
+  req(render3())
+  v <- vals$view[vals$view$name == input$view,]$id
+  
+  property <- data.frame(as.matrix(get_webproperty(valsReact$id,valsReact$uaid)))
+  view <- data.frame(get_profile(accountId = valsReact$id,webPropertyId = valsReact$uaid,profileId = v))
+  createdDate <- view$created[1]
+  permissions <- data.frame(view$effective)
+  plength <- nrow(permissions)
+  
+  x <- data.frame(
+    Name             = property['name',],
+    WebsiteURL       = view$websiteUrl[1],
+    Industy          = property['industryVertical',],
+    Currency         = view$currency[1],
+    Timezone         = view$timezone[1],
+    Permissions      = paste(permissions[1:plength,],collapse=", "),
+    AccountID        = property['accountId',],
+    UAID             = property['id',],
+    ViewID           = view$id[1],
+    Created          = createdDate,
+    stringsAsFactors = FALSE
+    )
+  
+  clientdata$data <- x
+})
+
+renderUI({
+  req(client())
+tags$h2("Account Information", class="accountinfo",
+         br())
+})
+
+renderUI({
+  req(client())
+  tagList(div(class='infocolumn1',
+    br(),
+    h4(strong("Name")),
+    h4(clientdata$data$name),
+     br(),
+     br(),
+    h4(strong("URL")),
+    h4(clientdata$data$WebsiteURL),
+     br(),
+     br(),
+    h4(strong("Industry")),
+    h4(clientdata$data$industryVertical),
+     br(),
+     br(),
+    h4(strong("Currency")),
+    h4(clientdata$data$Currency),
+     br(),
+     br(),
+    h4(strong("Timezone")),
+    h4(clientdata$data$Timezone),
+     br(),
+     br()
+  ),
+  div(class='infocolumn2',
+    br(),
+    h4(strong("Permissions")),
+    h4(clientdata$data$Permissions),
+     br(),
+     br(),
+    h4(strong("Account ID")),
+    h4(clientdata$data$accountId),
+     br(),
+     br(),
+    h4(strong("UAID")),
+    h4(clientdata$data$id),
+     br(),
+     br(),
+    h4(strong("View ID")),
+    h4(clientdata$data$ViewID),
+     br(),
+     br(),
+    h4(strong("Created")),
+    h4(clientdata$data$Created),
+    br()
+  )
+  )
+  })
+
+```
+
+<div class="graphs">
+```{r, echo=FALSE}
+renderUI({
+  req(render3())
+tagList(
+h2("Report Graphs & Tables",
+         br()
+         ),
+p('Note: The heatmap is interactive. You can click and drag different sections of the graph to focus on a certain area. Click off the graph to reset'),
+br()
+)
+})
+
+renderUI({
+  req(render3())
+  tags$h3("Day of the Week", id="dayofweek",
+          br(),
+          br())
+})
+renderDataTable({
+  req(render3())
+  values$DayOfWeek})
+
+renderD3heatmap({d3heatmap(data.matrix(values$dayofweekheatmap), scale = "column", colors = "Blues", dendrogram = "none", xaxis_font_size = "11px", yaxis_font_size = "11px", Rowv=FALSE, Colv=FALSE, column_names_max_height = TRUE)})
+```
+</br>
+```{r, echo=FALSE}
+renderUI({
+  req(render3())
+  tags$h3("Hour of Day", id="hourofday",
+          br(),
+          br())
+})
+renderDataTable({
+  req(render3())
+  values$HourOfDay})
+
+renderD3heatmap({d3heatmap(data.matrix(values$HourOfDayheatmap), scale = "column", colors = "Blues", dendrogram = "none", xaxis_font_size = "11px", yaxis_font_size = "11px", Rowv=FALSE, Colv=FALSE, column_names_max_height = TRUE)})
+```
+
+```{r, echo=FALSE}
+renderUI({
+  req(render3())
+  tags$h3("Devices", id="devices",
+          br(),
+          br())
+})
+renderDataTable({
+  req(render3())
+  values$Devices})
+
+renderD3heatmap({d3heatmap(data.matrix(values$Devicesheatmap), scale = "column", colors = "Blues", dendrogram = "none", xaxis_font_size = "11px", yaxis_font_size = "11px", Rowv=FALSE, Colv=FALSE, column_names_max_height = TRUE)})
+```
+
+```{r, echo=FALSE}
+renderUI({
+  req(render3())
+  tags$h3("New vs Returning", id="usertype",
+          br(),
+          br())
+})
+renderDataTable({
+  req(render3())
+  values$UserType})
+
+renderD3heatmap({d3heatmap(data.matrix(values$UserTypeheatmap), scale = "column", colors = "Blues", dendrogram = "none", xaxis_font_size = "11px", yaxis_font_size = "11px", Rowv=FALSE, Colv=FALSE, column_names_max_height = TRUE)})
+```
+
+```{r, echo=FALSE}
+renderUI({
+  req(render3())
+  tags$h3("Source / Medium", id="sourcemedium",
+          br(),
+          br())
+})
+renderDataTable({
+  req(render3())
+  values$SourceMedium})
+
+renderD3heatmap({d3heatmap(data.matrix(values$SourceMediumheatmap), scale = "column", colors = "Blues", dendrogram = "none", xaxis_font_size = "11px", yaxis_font_size = "11px", Rowv=FALSE, Colv=FALSE, column_names_max_height = TRUE)})
+```
+
+```{r, echo=FALSE}
+renderUI({
+  req(render3())
+  tags$h3("Landing Page", id="landingpage",
+          br(),
+          br())
+})
+renderDataTable({
+  req(render3())
+  values$LandingPage})
+
+renderD3heatmap({d3heatmap(data.matrix(values$LandingPageheatmap), scale = "column", colors = "Blues", dendrogram = "none", xaxis_font_size = "11px", yaxis_font_size = "11px", Rowv=FALSE, Colv=FALSE, column_names_max_height = TRUE)})
+```
+</div>
+</section>
+<section class="sub-pages">
+<!-- <br></br> -->
+<!-- <input type="button" name="test-page1" value="Page1" class="button"> -->
+<br></br>
+</section>
+</div>
+```{r, echo=FALSE}
+values <- reactiveValues()
+
+reactive({
+req(render3())
+startDate <- as.Date(input$dateRange[1])
+endDate <- as.Date(input$dateRange[2])
+# Day of Week Performance
+# - Conversion Rate
+
+view <- vals$view[vals$view$name == input$view,]$id
+
+#-------------| Day of Week |---------------#
+
+DayOfWeek <- get_ga(view,
+  start.date = startDate,
+  end.date   = endDate,
+  metrics    = "
+  ga:sessions,
+  ga:pageviews,
+  ga:newUsers,
+  ga:bounceRate,
+  ga:avgPageLoadTime,
+  ga:transactions,
+  ga:transactionRevenue,
+  ga:revenuePerTransaction,
+  ga:transactionsPerSession",
+  dimensions = "ga:dayOfWeek",
+  sort       = "ga:dayOfWeek",
+  # fetch.by = "week"
+  )
+
+DayOfWeek[1,1] <- "Sunday"
+DayOfWeek[2,1] <- "Monday"
+DayOfWeek[3,1] <- "Tuesday"
+DayOfWeek[4,1] <- "Wednesday"
+DayOfWeek[5,1] <- "Thursday"
+DayOfWeek[6,1] <- "Friday"
+DayOfWeek[7,1] <- "Caturday"
+
+colnames(DayOfWeek) <- c('Day of Week',
+ 'Sessions',
+ 'Pageviews',
+ 'NewUsers',
+ 'Bounce Rate',
+ 'Site Speed',
+ 'Transactions',
+ 'Revenue',
+ 'AOV',
+ 'CNV'
+ )
+
+DayOfWeek$`Bounce Rate` <- as.numeric(DayOfWeek$`Bounce Rate`)/100
+DayOfWeek$`CNV` <- as.numeric(DayOfWeek$`CNV`)/100
+values$DayOfWeek <- DayOfWeek
+
+heatmap <- DayOfWeek
+rownames(heatmap) <- heatmap[,1]
+heatmap[,1] <- NULL
+values$dayofweekheatmap <- heatmap
+
+#-------------| Devices |---------------#
+
+# Device
+# - Sessions
+# - Conversion Rate
+# - Revenue
+# - Transactions
+
+Devices <- get_ga(view,
+  start.date = startDate,
+  end.date   = endDate,
+  metrics    = "
+  ga:sessions,
+  ga:pageviews,
+  ga:newUsers,
+  ga:bounceRate,
+  ga:avgPageLoadTime,
+  ga:transactions,
+  ga:transactionRevenue,
+  ga:revenuePerTransaction,
+  ga:transactionsPerSession",
+  dimensions = "ga:deviceCategory",
+  sort       = "-ga:sessions"
+  # fetch.by = "week",
+  )
+
+colnames(Devices) <- c('Device',
+ 'Sessions',
+ 'Pageviews',
+ 'NewUsers',
+ 'Bounce Rate',
+ 'Site Speed',
+ 'Transactions',
+ 'Revenue',
+ 'Avg Order Value',
+ 'Conversion Rate'
+ )
+
+Devices$`Bounce Rate` <- as.numeric(Devices$`Bounce Rate`)/100
+Devices$`Conversion Rate` <- as.numeric(Devices$`Conversion Rate`)/100
+values$Devices <- Devices
+
+heatmap <- Devices
+rownames(heatmap) <- heatmap[,1]
+heatmap[,1] <- NULL
+values$Devicesheatmap <- heatmap
+
+#-------------| Hour of Day |---------------#
+# Hour of Day
+# - Conversion Rate
+
+HourOfDay <- get_ga(view,
+  start.date = startDate,
+  end.date   = endDate,
+  metrics    = "
+  ga:sessions,
+  ga:pageviews,
+  ga:newUsers,
+  ga:bounceRate,
+  ga:avgPageLoadTime,
+  ga:transactions,
+  ga:transactionRevenue,
+  ga:revenuePerTransaction,
+  ga:transactionsPerSession",
+  dimensions = "ga:hour",
+  sort       = "ga:hour"
+  # fetch.by = "week",
+  )
+
+colnames(HourOfDay) <- c('Hour of Day',
+ 'Sessions',
+ 'Pageviews',
+ 'NewUsers',
+ 'Bounce Rate',
+ 'Site Speed',
+ 'Transactions',
+ 'Revenue',
+ 'Avg Order Value',
+ 'Conversion Rate'
+ )
+
+HourOfDay$`Bounce Rate` <- as.numeric(HourOfDay$`Bounce Rate`)/100
+HourOfDay$`Conversion Rate` <- as.numeric(HourOfDay$`Conversion Rate`)/100
+values$HourOfDay <- HourOfDay
+
+heatmap <- HourOfDay
+rownames(heatmap) <- heatmap[,1]
+heatmap[,1] <- NULL
+values$HourOfDayheatmap <- heatmap
+
+#-------------| New v Returning |---------------#
+# New v Returning
+# - Conversion Rate
+# - Revenue
+
+UserType <- get_ga(view,
+  start.date = startDate,
+  end.date   = endDate,
+  metrics    = "
+  ga:sessions,
+  ga:pageviews,
+  ga:newUsers,
+  ga:bounceRate,
+  ga:avgPageLoadTime,
+  ga:transactions,
+  ga:transactionRevenue,
+  ga:revenuePerTransaction,
+  ga:transactionsPerSession",
+  dimensions = "ga:userType",
+  sort       = "-ga:sessions"
+  # fetch.by = "week",
+  )
+
+colnames(UserType) <- c('User Type',
+ 'Sessions',
+ 'Pageviews',
+ 'NewUsers',
+ 'Bounce Rate',
+ 'Site Speed',
+ 'Transactions',
+ 'Revenue',
+ 'Avg Order Value',
+ 'Conversion Rate'
+ )
+
+UserType$`Bounce Rate` <- as.numeric(UserType$`Bounce Rate`)/100
+UserType$`Conversion Rate` <- as.numeric(UserType$`Conversion Rate`)/100
+values$UserType <- UserType
+
+heatmap <- UserType
+rownames(heatmap) <- heatmap[,1]
+heatmap[,1] <- NULL
+values$UserTypeheatmap <- heatmap
+
+#-------------| Source / Medium |---------------#
+# Source / Medium
+# - Sessions
+# - Conversion Rate
+# - Revenue
+
+SourceMedium <- get_ga(view,
+  start.date = startDate,
+  end.date   = endDate,
+  metrics    = "
+  ga:sessions,
+  ga:pageviews,
+  ga:newUsers,
+  ga:bounceRate,
+  ga:avgPageLoadTime,
+  ga:transactions,
+  ga:transactionRevenue,
+  ga:revenuePerTransaction,
+  ga:transactionsPerSession",
+  dimensions = "ga:sourceMedium",
+  sort       = "-ga:sessions"
+  # fetch.by = "week",
+  )
+
+colnames(SourceMedium) <- c('Source / Medium',
+ 'Sessions',
+ 'Pageviews',
+ 'NewUsers',
+ 'Bounce Rate',
+ 'Site Speed',
+ 'Transactions',
+ 'Revenue',
+ 'Avg Order Value',
+ 'Conversion Rate'
+ )
+
+SourceMedium$`Bounce Rate` <- as.numeric(SourceMedium$`Bounce Rate`)/100
+SourceMedium$`Conversion Rate` <- as.numeric(SourceMedium$`Conversion Rate`)/100
+values$SourceMedium <- SourceMedium
+
+heatmap <- SourceMedium
+rownames(heatmap) <- heatmap[,1]
+heatmap[,1] <- NULL
+values$SourceMediumheatmap <-  head(heatmap, n=25)
+
+#-------------| Landing Pages |---------------#
+# Landing Pages
+# - New Users
+# - Bounce Rate
+# - Conversion Rate
+# - Revenue
+
+LandingPage <- get_ga(view,
+  start.date = startDate,
+  end.date   = endDate,
+  metrics    = "
+  ga:sessions,
+  ga:pageviews,
+  ga:newUsers,
+  ga:bounceRate,
+  ga:avgPageLoadTime,
+  ga:transactions,
+  ga:transactionRevenue,
+  ga:revenuePerTransaction,
+  ga:transactionsPerSession",
+  dimensions = "ga:landingPagePath",
+  sort       = "-ga:sessions"
+  # fetch.by = "week",
+  )
+
+colnames(LandingPage) <- c('Landing Page',
+ 'Sessions',
+ 'Pageviews',
+ 'NewUsers',
+ 'Bounce Rate',
+ 'Site Speed',
+ 'Transactions',
+ 'Revenue',
+ 'Avg Order Value',
+ 'Conversion Rate'
+ )
+
+LandingPage$`Bounce Rate` <- as.numeric(LandingPage$`Bounce Rate`)/100
+LandingPage$`Conversion Rate` <- as.numeric(LandingPage$`Conversion Rate`)/100
+values$LandingPage <- LandingPage
+
+heatmap <- LandingPage
+rownames(heatmap) <- heatmap[,1]
+heatmap[,1] <- NULL
+values$LandingPageheatmap <- head(heatmap, n=25)
+})
+```
+
+<style type="text/css">
+.container-fluid.main-container {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 1%;
+  margin-right: 1%;
+}
+
+.floating-pagination {
+    position: fixed;
+    right: 1%;
+    top: 1.5%;
+    padding: 0 15px 10px 15px;
+    background-color: rgba(158, 158, 158, 0.21);
+    z-index: 9999;
+    border-radius: 5px;
+}
+
+.account-details {
+  width: 60%;
+}
+
+.column1 {
+/*float: left;*/
+/*width: 30%;*/
+margin-right: 2%;
+}
+
+.column2 {
+/*float: left;*/
+/*width: 30%;*/
+margin-right: 2%;
+}
+
+.column3 {
+/*float: left;*/
+/*width: 30%;*/
+margin-right: 2%;
+}
+
+.sub-pages {
+clear: both;
+}
+
+.wrapper {
+width: 90%;
+}
+
+.infocolumn1 {
+float: left;
+width: 20%;
+}
+
+.graphs {
+margin-right: 4%;
+clear: both;
+}
+
+.shiny-output-error {
+visibility:hidden;
+}
+
+</style>
+
+<script>
+$(".sub-pages").click(function(){
+  $(".graphs").show();
+});
+</script>

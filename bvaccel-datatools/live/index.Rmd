@@ -126,7 +126,6 @@ dateRange <- reactive({
 
 ```{r info, echo=FALSE}
 tags$h2("Report Description", class="description",
-         br(),
          br())
 tags$p("This report pulls data specifically for CRO analysis. All data is collected from Google Analytics and can be exported into an XLSX workbook.",
        br(),
@@ -134,10 +133,10 @@ tags$p("This report pulls data specifically for CRO analysis. All data is collec
        "For comments, questions and bugs please fill out our ",a(href="https://goo.gl/forms/lCxttDAJAmo8Jnbm1", "Google Form.", target="_blank"),
        br(),
        br(),
+       "Changelog for current features and upcoming configurations can be viewed ",a(href="https://github.com/TechnicalWebAnalytics/shiny-server/blob/master/bvaccel-datatools/changelog.txt", "here.", target="_blank"),
+       br(),
+       br(),
        "You can use the pagination to the right to navigate to the available report graphs ( after authorization ).",
-       br(),
-       br(),
-       "Follow the steps to generate a report.",
        br(),
        br()
        )
@@ -145,13 +144,15 @@ tags$p("This report pulls data specifically for CRO analysis. All data is collec
 
 ```{r, echo=FALSE}
 tags$h2("Generate a Report", class="generate",
-         br(),
          br())
+tags$p("Follow the steps to generate a report.",
+       br(),
+       br())
 tags$h4(em("1. Authorize Google Analytics. Note that if you refresh you will have to reauthorize. We are working on this."))
 gar_auth_jsUI("auth_demo", login_text = "Authorize Google")
 tags$br()
 tags$br()
-tags$h4(em("2. Wait for account details to load. This could take a while. If you update any account details please wait for tables and graphs to load. ( We will be instaling a loader at some point )"))
+tags$h4(em("2. Wait for account details to load. This could take a while. If you update any account details please wait for tables and graphs to load. ( We will be installing a progress loader at some point )"))
 ```
 </br>
 ```{r date, echo=FALSE}
