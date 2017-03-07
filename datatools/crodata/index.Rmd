@@ -208,7 +208,6 @@ renderUI({
 
 reactive({
   req(render3())
-  client <- data.frame(t(clientdata$data))
   dow <- data.frame(values$DayOfWeek)
   hod <- values$HourOfDay
   dev <- values$Devices
@@ -236,89 +235,89 @@ reactive({
 </br>
 </section>
 ```{r, echo=FALSE}
-clientdata <- reactiveValues()
-client <- reactive({
-  req(render3())
-  v <- vals$view[vals$view$name == input$view,]$id
-  
-  property <- data.frame(as.matrix(get_webproperty(valsReact$id,valsReact$uaid)))
-  view <- data.frame(get_profile(accountId = valsReact$id,webPropertyId = valsReact$uaid,profileId = v))
-  createdDate <- view$created[1]
-  permissions <- data.frame(view$effective)
-  plength <- nrow(permissions)
-  
-  x <- data.frame(
-    Name             = property['name',],
-    WebsiteURL       = view$websiteUrl[1],
-    Industy          = property['industryVertical',],
-    Currency         = view$currency[1],
-    Timezone         = view$timezone[1],
-    Permissions      = paste(permissions[1:plength,],collapse=", "),
-    AccountID        = property['accountId',],
-    UAID             = property['id',],
-    ViewID           = view$id[1],
-    Created          = createdDate,
-    stringsAsFactors = FALSE
-    )
-  
-  clientdata$data <- x
-})
-
-renderUI({
-  req(client())
-tags$h2("Account Information", class="accountinfo",
-         br())
-})
-
-renderUI({
-  req(client())
-  tagList(div(class='infocolumn1',
-    br(),
-    h4(strong("Name")),
-    h4(clientdata$data$name),
-     br(),
-     br(),
-    h4(strong("URL")),
-    h4(clientdata$data$WebsiteURL),
-     br(),
-     br(),
-    h4(strong("Industry")),
-    h4(clientdata$data$industryVertical),
-     br(),
-     br(),
-    h4(strong("Currency")),
-    h4(clientdata$data$Currency),
-     br(),
-     br(),
-    h4(strong("Timezone")),
-    h4(clientdata$data$Timezone),
-     br(),
-     br()
-  ),
-  div(class='infocolumn2',
-    br(),
-    h4(strong("Permissions")),
-    h4(clientdata$data$Permissions),
-     br(),
-     br(),
-    h4(strong("Account ID")),
-    h4(clientdata$data$accountId),
-     br(),
-     br(),
-    h4(strong("UAID")),
-    h4(clientdata$data$id),
-     br(),
-     br(),
-    h4(strong("View ID")),
-    h4(clientdata$data$ViewID),
-     br(),
-     br(),
-    h4(strong("Created")),
-    h4(clientdata$data$Created),
-    br()
-  )
-  )
-  })
+# clientdata <- reactiveValues()
+# client <- reactive({
+#   req(render3())
+#   v <- vals$view[vals$view$name == input$view,]$id
+#   
+#   property <- data.frame(as.matrix(get_webproperty(valsReact$id,valsReact$uaid)))
+#   view <- data.frame(get_profile(accountId = valsReact$id,webPropertyId = valsReact$uaid,profileId = v))
+#   createdDate <- view$created[1]
+#   permissions <- data.frame(view$effective)
+#   plength <- nrow(permissions)
+#   
+#   x <- data.frame(
+#     Name             = property['name',],
+#     WebsiteURL       = view$websiteUrl[1],
+#     Industy          = property['industryVertical',],
+#     Currency         = view$currency[1],
+#     Timezone         = view$timezone[1],
+#     Permissions      = paste(permissions[1:plength,],collapse=", "),
+#     AccountID        = property['accountId',],
+#     UAID             = property['id',],
+#     ViewID           = view$id[1],
+#     Created          = createdDate,
+#     stringsAsFactors = FALSE
+#     )
+#   
+#   clientdata$data <- x
+# })
+# 
+# renderUI({
+#   req(client())
+# tags$h2("Account Information", class="accountinfo",
+#          br())
+# })
+# 
+# renderUI({
+#   req(client())
+#   tagList(div(class='infocolumn1',
+#     br(),
+#     h4(strong("Name")),
+#     h4(clientdata$data$name),
+#      br(),
+#      br(),
+#     h4(strong("URL")),
+#     h4(clientdata$data$WebsiteURL),
+#      br(),
+#      br(),
+#     h4(strong("Industry")),
+#     h4(clientdata$data$industryVertical),
+#      br(),
+#      br(),
+#     h4(strong("Currency")),
+#     h4(clientdata$data$Currency),
+#      br(),
+#      br(),
+#     h4(strong("Timezone")),
+#     h4(clientdata$data$Timezone),
+#      br(),
+#      br()
+#   ),
+#   div(class='infocolumn2',
+#     br(),
+#     h4(strong("Permissions")),
+#     h4(clientdata$data$Permissions),
+#      br(),
+#      br(),
+#     h4(strong("Account ID")),
+#     h4(clientdata$data$accountId),
+#      br(),
+#      br(),
+#     h4(strong("UAID")),
+#     h4(clientdata$data$id),
+#      br(),
+#      br(),
+#     h4(strong("View ID")),
+#     h4(clientdata$data$ViewID),
+#      br(),
+#      br(),
+#     h4(strong("Created")),
+#     h4(clientdata$data$Created),
+#     br()
+#   )
+#   )
+#   })
 
 ```
 
