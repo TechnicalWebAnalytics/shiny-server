@@ -1,5 +1,5 @@
 ---
-title: "CRO Data"
+title: "CRO Data Report"
 author: "mechelle@bvaccel.com / mariel@bvaccel.com"
 date: "3/5/2017"
 runtime: shiny
