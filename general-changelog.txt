@@ -1,1 +1,3 @@
 - create timeline to apply annotations
+- add strategies for tests
+- analytics info 

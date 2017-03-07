@@ -9,6 +9,7 @@ Upcoming Changes
 - cached report settings
 - update heatmap based on table output
 - adding ability to make comments within report
+- apply cro strategy suggestions
 
 ver 1.0
 - added raw ga data reports 
