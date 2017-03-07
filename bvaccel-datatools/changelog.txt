@@ -1,0 +1,25 @@
+Upcoming Changes
+- progress loader ( so you're not confused about waiting for report to load )
+- cached ga authorization
+- aggregated data
+- additional export types
+- smoother reactive functionality
+- ui / ux dashboard development
+- user account creation to save reports
+
+ver 1.0
+- added raw ga data reports 
+  > day of week
+  > hour of day
+  > devices
+  > new v returning
+  > source medium
+  > landing pages
+- added account info
+- added xlsx export functionality
+- added initial ga authorization
+- added date range
+- added table chart
+- added heatmap graph
+- initial css for simple ui
+- fixed nav
