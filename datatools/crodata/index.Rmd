@@ -52,7 +52,7 @@ dateRange <- reactive({
   req(auth())
   dateRangeInput('dateRange',
       label = 'Date range input: yyyy-mm-dd',
-      start = Sys.Date() - 2, end = Sys.Date() + 2
+      start = Sys.Date() - 100, end = Sys.Date()
     )
 })
 
@@ -81,35 +81,17 @@ export <- reactive({
   req(runreport())
   downloadButton(outputId = 'export', label = "Magic Button")
 })
-
-reactive({
-  req(runreport())
-  dow <- data.frame(values$DayOfWeek)
-  hod <- values$HourOfDay
-  dev <- values$Devices
-  ut <- values$UserType
-  sm <- values$SourceMedium
-  lp <- values$LandingPage
-
-  output$downloadData <- downloadHandler(
-    filename = function() {
-      paste("crodata-", Sys.Date(), ".xlsx", sep="")
-    },
-    content = function(file) {
-        write.xlsx(dow, file, sheetName = 'RAW Day of Week')
-        write.xlsx(hod, file, append=TRUE, sheetName = 'RAW Hour of Day')
-        write.xlsx(dev, file, append=TRUE, sheetName = 'RAW Devices')
-        write.xlsx(ut, file, append=TRUE, sheetName = 'RAW New vs Returning')
-        write.xlsx(sm, file, append=TRUE, sheetName = 'RAW Source Medium')
-        write.xlsx(lp, file, append=TRUE, sheetName = 'RAW Landing Page')
-    }
-  )})
 ```
 
 ```{r server visuals, echo=FALSE, warning=FALSE}
 values <- reactiveValues() 
 
 runreport <- eventReactive(input$runreport,{
+  
+withProgress(message = 'Generating Report', value = 0, {
+  
+n <- 7
+  
 req(ga_view())
 startDate <- as.Date(input$dateRange[1])
 endDate <- as.Date(input$dateRange[2])
@@ -119,6 +101,8 @@ endDate <- as.Date(input$dateRange[2])
 view <- vals$view[vals$view$name == input$view,]$id
 
 #-------------| Day of Week |---------------#
+
+incProgress(1/n, detail = paste("Processing", ceiling(1/7*100),"%"))
 
 DayOfWeek <- get_ga(view,
   start.date = startDate,
@@ -169,6 +153,8 @@ values$dayofweekheatmap <- heatmap
 
 #-------------| Devices |---------------#
 
+incProgress(1/n, detail = paste("Processing", ceiling(2/7*100),"%"))
+
 # Device
 # - Sessions
 # - Conversion Rate
@@ -215,6 +201,9 @@ heatmap[,1] <- NULL
 values$Devicesheatmap <- heatmap
 
 #-------------| Hour of Day |---------------#
+
+incProgress(1/n, detail = paste("Processing", ceiling(3/7*100),"%"))
+
 # Hour of Day
 # - Conversion Rate
 
@@ -258,6 +247,9 @@ heatmap[,1] <- NULL
 values$HourOfDayheatmap <- heatmap
 
 #-------------| New v Returning |---------------#
+
+incProgress(1/n, detail = paste("Processing", ceiling(4/7*100),"%"))
+
 # New v Returning
 # - Conversion Rate
 # - Revenue
@@ -302,6 +294,9 @@ heatmap[,1] <- NULL
 values$UserTypeheatmap <- heatmap
 
 #-------------| Source / Medium |---------------#
+
+incProgress(1/n, detail = paste("Processing", ceiling(5/7*100),"%"))
+
 # Source / Medium
 # - Sessions
 # - Conversion Rate
@@ -348,6 +343,9 @@ heatmap[,1] <- NULL
 values$SourceMediumheatmap <-  head(heatmap, n=25)
 
 #-------------| Landing Pages |---------------#
+
+incProgress(1/n, detail = paste("Processing", ceiling(6/7*100),"%"))
+
 # Landing Pages
 # - New Users
 # - Bounce Rate
@@ -373,6 +371,8 @@ LandingPage <- get_ga(view,
   # fetch.by = "week",
   )
 
+incProgress(1/n, detail = paste("Processing", ceiling(7/7*100),"%"))
+
 colnames(LandingPage) <- c('Landing Page',
  'Sessions',
  'Pageviews',
@@ -393,7 +393,58 @@ heatmap <- LandingPage
 rownames(heatmap) <- heatmap[,1]
 heatmap[,1] <- NULL
 values$LandingPageheatmap <- head(heatmap, n=25)
+
+ dow <- data.frame(values$DayOfWeek)
+  hod <- values$HourOfDay
+  dev <- values$Devices
+  ut <- values$UserType
+  sm <- values$SourceMedium
+  lp <- values$LandingPage
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("crodata-", Sys.Date(), ".xlsx", sep="")
+    },
+    content = function(file) {
+        write.xlsx(dow, file, sheetName = 'RAW Day of Week')
+        write.xlsx(hod, file, append=TRUE, sheetName = 'RAW Hour of Day')
+        write.xlsx(dev, file, append=TRUE, sheetName = 'RAW Devices')
+        write.xlsx(ut, file, append=TRUE, sheetName = 'RAW New vs Returning')
+        write.xlsx(sm, file, append=TRUE, sheetName = 'RAW Source Medium')
+        write.xlsx(lp, file, append=TRUE, sheetName = 'RAW Landing Page')
+    }
+  )
+
 })
+})
+
+# reactive({
+#   withProgress(message = 'Making plot', value = 0, {
+#   req(runreport())
+#   n <- 3
+#   incProgress(1/n, detail = paste("Processing", ceiling(1/n*100),"%"))
+#   dow <- data.frame(values$DayOfWeek)
+#   hod <- values$HourOfDay
+#   dev <- values$Devices
+#   ut <- values$UserType
+#   sm <- values$SourceMedium
+#   lp <- values$LandingPage
+#   incProgress(1/n, detail = paste("Processing", ceiling(2/n*100),"%"))
+#   output$downloadData <- downloadHandler(
+#     filename = function() {
+#       paste("crodata-", Sys.Date(), ".xlsx", sep="")
+#     },
+#     content = function(file) {
+#         write.xlsx(dow, file, sheetName = 'RAW Day of Week')
+#         write.xlsx(hod, file, append=TRUE, sheetName = 'RAW Hour of Day')
+#         write.xlsx(dev, file, append=TRUE, sheetName = 'RAW Devices')
+#         write.xlsx(ut, file, append=TRUE, sheetName = 'RAW New vs Returning')
+#         write.xlsx(sm, file, append=TRUE, sheetName = 'RAW Source Medium')
+#         write.xlsx(lp, file, append=TRUE, sheetName = 'RAW Landing Page')
+#     }
+#   )
+#   incProgress(1/n, detail = paste("Processing", ceiling(3/n*100),"%"))
+#   })
+#   })
 ```
 
 <!-- RENDER -->
@@ -504,7 +555,7 @@ renderUI({
 tags$br()
 
 renderUI({
-  req(runreport())
+  req(ga_view())
   tagList(tags$br(),
   tags$h4(em("6. Export your data ( Currently as an XLSX ). Or you can view the data in the graphs below."),
           tags$br())
@@ -512,8 +563,9 @@ renderUI({
 })
 
 renderUI({
-  req(runreport())
-  downloadButton("downloadData", "The Magic Button")})
+  req(ga_view())
+  downloadButton("downloadData", "The Magic Button")
+  })
 
 tags$br()
 tags$br()
